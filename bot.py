@@ -2,14 +2,15 @@ import telebot
 import requests
 from bs4 import BeautifulSoup
 from time import sleep
-from app.analyzer import analyze
+from app.analyzer import analyze, Keywords
 from app.client import *
 from app.check import isBanned, ban
 
+SERVER = '213.200.50.96'
 isGlobal = False
 bot = telebot.AsyncTeleBot('1146957344:AAHN08jCqvfbER6tTtQ66vQ_Z_HxrfwLZOI')
 SEARCH_URL = 'https://mp3legenda.com/?q='
-Admins = [395809791, 492633325, 288371758, 415434846, 390512841]
+Admins = [395809791, 288371758, 492633325, 415434846, 390512841, -1001453719673]
 Block_Author = ['']
 headers = {
     'Encoding': 'gzip, deflate, br',
@@ -42,10 +43,27 @@ def start_message(message):
     sleep(0.1)
 
 
+@bot.message_handler(commands=['skip'])
+def stop_function(message):
+    if message.chat.id in Admins:
+        client = Client(SERVER, 8888)
+        client.send_text('skip')
+        bot.send_message(message.chat.id, 'Пропускаю трэк, Сэр ' + message.from_user.first_name + ' ' + message.from_user.last_name)
+    sleep(0.1)
+
+
+@bot.message_handler(commands=['ban'])
+def stop_function(message):
+    if message.chat.id in Admins:
+        bot.send_message(message.chat.id, 'Добавил ключ-слово, Сэр ' + message.from_user.first_name + ' ' + message.from_user.last_name)
+        Keywords.append(message.text[5:])
+    sleep(0.1)
+
+
 @bot.message_handler(commands=['renew'])
 def renew_function(message):
     if message.chat.id in Admins:
-        client = Client('213.200.50.96', 8888)
+        client = Client(SERVER, 8888)
         client.send_text('start_play')
         bot.send_message(message.chat.id, 'Включаю колонку, Сэр ' + message.from_user.first_name + ' ' + message.from_user.last_name)
     sleep(0.1)
@@ -54,7 +72,7 @@ def renew_function(message):
 @bot.message_handler(commands=['stop'])
 def stop_function(message):
     if message.chat.id in Admins:
-        client = Client('213.200.50.96', 8888)
+        client = Client(SERVER, 8888)
         client.send_text('stop_play')
         bot.send_message(message.chat.id, 'Выключаю колонку, Сэр ' + message.from_user.first_name + ' ' + message.from_user.last_name)
     sleep(0.1)
@@ -63,53 +81,57 @@ def stop_function(message):
 @bot.message_handler(commands=['clear'])
 def order_function(message):
     if message.chat.id in Admins:
-        client = Client('213.200.50.96', 8888)
+        client = Client(SERVER, 8888)
         client.send_text('clearStack')
-        bot.send_message(message.chat.id, 'Стэк ебнут, Сэр ' + message.from_user.first_name + ' ' + message.from_user.last_name)
+        bot.send_message(message.chat.id, 'Стэк чист, Сэр ' + message.from_user.first_name + ' ' + message.from_user.last_name)
     sleep(0.1)
 
 
 @bot.message_handler(commands=['order'])
 def clear_function(message):
-    client = Client('213.200.50.96', 8888)
-    Array = list(map(str, client.send_text('getStack')[1:][:-1].split(", ")))
+    client = Client(SERVER, 8888)
+    Array = list(map(str, client.send_text('getStack')[1:][:-1].split("/*/ ")))
     result = ''
-    #print(Array)
     if Array[0] == '' and len(Array) == 1:
         bot.send_message(message.chat.id, 'Песни еще не заказаны)')
         sleep(0.1)
         return
     for i in range(len(Array)):
-        result += str(i+1)+') ' + Array[i] + '\n'
+        if message.chat.id in Admins:
+            result += str(i+1)+') ' + list(map(str, Array[i].split('^')))[0] + ' - ' + list(map(str, Array[i].split('^')))[1] + '\n'
+        else:
+            result += str(i+1)+') ' + list(map(str, Array[i].split('^')))[0] + '\n'
     bot.send_message(message.chat.id, result)
     sleep(0.1)
 
 
 @bot.message_handler(commands=['set'])
 def handle_message(message):
-    if message.chat.id == 390512841:
-        bot.send_message(message.chat.id, 'Яна ну ты реально достала со своей музыкой...')
+    client = Client(SERVER, 8888)
+    Array = client.send_text('getStack')
+    Music = list(map(str, Array[1:][:-1].split("/*/ ")))
+    if str(message.chat.id) in Array and message.chat.id not in Admins:
+        bot.send_message(message.chat.id, 'Ваш трэк уже стоит в очереди.')
+        sleep(0.1)
+        return
+    if len(Music)>=29:
+        bot.send_message(message.chat.id, 'Слишком много музыки в очереди попробуйте позже.')
+        sleep(0.1)
         return
     message.text = message.text[5:]
     Words = message.text.split()
     request = (SEARCH_URL + '+'.join(Words)).lower()
     page = requests.get(request)
     if page.status_code == 200:
-        client = Client('213.200.50.96', 8888)
-        Array = client.send_text('getStack')
-        Music = list(map(str, Array[1:][:-1].split(", ")))
-        if len(Music)>=31:
-            bot.send_message(message.chat.id, 'Слишком много музыки в очереди попробуйте позже.')
-            sleep(0.1)
-            return
         soup = BeautifulSoup(page.text, 'html.parser')
         lyrics = soup.find('div', class_='lyrics')
         if lyrics == None:
             bot.send_message(message.chat.id, 'Извините, трек временно недоступен... Попробуйте другой.')
             return
-        if not analyze(lyrics.text):
-            bot.send_message(message.chat.id, 'Трек не прошел цензуру... Попробуйте другой.')
-            return
+        if message.chat.id not in Admins:
+            if not analyze(lyrics.text):
+                bot.send_message(message.chat.id, 'Трек не прошел цензуру... Попробуйте другой.')
+                return
         info = soup.find('ul', class_='info')
         name = info.find_all('li')[0].text[6:]
         title = info.find_all('li')[1].text[22:]
@@ -121,8 +143,8 @@ def handle_message(message):
             bot.send_message(message.chat.id, 'Я не нашел текст этого трека, попробуйте позже.')
         else:
             if (title+' '+name) not in Array:
-                client = Client('213.200.50.96', 8888)
-                client.send_text('add^'+r.text+'^'+title+' '+name)
+                client = Client(SERVER, 8888)
+                client.send_text('add^'+r.text+'^'+title+' '+name+'^'+str(message.chat.id))
                 bot.send_message(message.chat.id, 'Песня принята. Вы встали в очередь. Ваша песня - '+name+' '+title+'\n')
             else:
                 bot.send_message(message.chat.id, 'Песня уже добавлена в список) Чтобы проверить список песен пропишите /order.')
