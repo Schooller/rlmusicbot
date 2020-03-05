@@ -150,6 +150,10 @@ def handle_message(message):
         info = soup.find('ul', class_='info')
         name = info.find_all('li')[0].text[6:]
         title = info.find_all('li')[1].text[22:]
+        if (title+' '+name) in Array:
+            bot.send_message(message.chat.id, 'Песня уже добавлена в список) Чтобы проверить список песен пропишите /order.')
+            sleep(0.1)
+            return
         headers['Referer'] = request.encode('utf-8')
         data['li_song'] = title.encode('utf-8')
         data['li_artist'] = name.encode('utf-8')
@@ -157,12 +161,9 @@ def handle_message(message):
         if r.text == '':
             bot.send_message(message.chat.id, 'Я не нашел текст этого трека, попробуйте позже.')
         else:
-            if (title+' '+name) not in Array:
-                client = Client(SERVER_NAME, SERVER_ID)
-                client.send_text('add^'+r.text+'^'+title+' '+name+'^'+str(message.chat.id))
-                bot.send_message(message.chat.id, 'Песня принята. Вы встали в очередь. Ваша песня - '+name+' '+title+'\n')
-            else:
-                bot.send_message(message.chat.id, 'Песня уже добавлена в список) Чтобы проверить список песен пропишите /order.')
+            client = Client(SERVER_NAME, SERVER_ID)
+            client.send_text('add^'+r.text+'^'+title+' '+name+'^'+str(message.chat.id))
+            bot.send_message(message.chat.id, 'Песня принята. Вы встали в очередь. Ваша песня - '+name+' '+title+'\n') 
     else:
         bot.send_message(message.chat.id, 'Я не смог найти эту песню, повторите запрос позже.')
     sleep(0.1)
