@@ -6,8 +6,8 @@ from app.analyzer import analyze, Keywords
 from app.client import *
 from app.check import isBanned, ban
 
-SERVER_NAME = '213.200.50.96'
-SERVER_ID = 8888
+SERVER_NAME = '---'
+SERVER_ID = 0
 isGlobal = False
 bot = telebot.AsyncTeleBot('1146957344:AAHN08jCqvfbER6tTtQ66vQ_Z_HxrfwLZOI')
 SEARCH_URL = 'https://mp3legenda.com/?q='
