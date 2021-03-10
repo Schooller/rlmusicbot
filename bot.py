@@ -9,7 +9,7 @@ from app.check import isBanned, ban
 SERVER_NAME = '---'
 SERVER_ID = 0
 isGlobal = False
-bot = telebot.AsyncTeleBot('1146957344:AAHN08jCqvfbER6tTtQ66vQ_Z_HxrfwLZOI')
+bot = telebot.AsyncTeleBot('---')
 SEARCH_URL = 'https://mp3legenda.com/?q='
 Admins = [395809791, 288371758, 492633325, 415434846, 390512841, -1001453719673]
 Block_Author = ['']
